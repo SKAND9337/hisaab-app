@@ -13,37 +13,38 @@ permissions:
 jobs:
   release:
     name: Build AppImage and Tarball
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Build Dependencies
+      - name: Install Build & Qt6 Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             cmake \
             ninja-build \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-declarative-dev \
+            qt6-declarative-dev-tools \
+            qml6-module-qtquick \
+            qml6-module-qtquick-controls \
+            qml6-module-qtquick-layouts \
+            qml6-module-qtquick-window \
+            qml6-module-qtquick-templates \
+            libqt6opengl6-dev \
+            qt6-wayland \
             libgl1-mesa-dev \
             libegl1-mesa-dev \
             libxkbcommon-dev \
             libxkbcommon-x11-dev \
-            libfuse2 \
             desktop-file-utils \
             file \
-            wget
-
-      - name: Install Qt 6
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.6.3'
-          host: 'linux'
-          target: 'desktop'
-          arch: 'gcc_64'
-          modules: 'qtdeclarative qtwayland'
-          cache: true
+            wget \
+            libfuse2t64 || sudo apt-get install -y libfuse2 || true
 
       - name: Build Hisaab
         run: |
@@ -63,13 +64,16 @@ jobs:
           cp assets/hisaab.png AppDir/hisaab.png
 
       - name: Build AppImage
-        env:
-          APPIMAGE_EXTRACT_AND_RUN: 1
-          QML_SOURCES_PATHS: ${{ github.workspace }}/qml
         run: |
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
+
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export QMAKE=$(which qmake6 2>/dev/null || which /usr/lib/qt6/bin/qmake 2>/dev/null || which qmake 2>/dev/null)
+          export QML_SOURCES_PATHS=${{ github.workspace }}/qml
+
+          echo "Using QMAKE: $QMAKE"
 
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
@@ -82,6 +86,7 @@ jobs:
       - name: Package Release Tarball
         run: |
           VERSION="${GITHUB_REF_NAME:-v1.0.0}"
+          if [ "$VERSION" = "main" ]; then VERSION="v1.0.0"; fi
           FOLDER="hisaab-${VERSION}-linux-x86_64"
           mkdir -p "$FOLDER"
           cp build/hisaab "$FOLDER/"
@@ -118,6 +123,7 @@ jobs:
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ (github.ref_name == 'main' || github.ref_name == '') && 'v1.0.0' || github.ref_name }}
           files: |
             Hisaab-x86_64.AppImage
             hisaab-*.tar.gz
