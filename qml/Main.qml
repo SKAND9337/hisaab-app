@@ -6,8 +6,8 @@ import "components"
 
 Window {
     id: mainWindow
-    width: (CalcEngine.mode === 2) ? 540 : 440
-    height: (CalcEngine.mode === 2) ? 750 : (CalcEngine.mode === 1 ? 640 : 580)
+    width: 440
+    height: (CalcEngine.mode === 0) ? 580 : 640
     visible: true
     title: "Hisaab"
     color: "transparent"
@@ -104,7 +104,7 @@ Window {
                 anchors.topMargin: 0
                 spacing: 10
 
-                // Mode switcher bar (Standard / Scientific / Programmer)
+                // Mode switcher bar (Standard / Scientific / Misc)
                 ModeBar {
                     width: parent.width
                     historyOpen: historyDrawer.isOpen
@@ -114,23 +114,21 @@ Window {
                 // Primary Display (with live preview and crisp typography)
                 DisplayPanel {
                     width: parent.width
-                }
-
-                // Programmer Panels (only visible when in Programmer mode)
-                RadixPanel {
-                    width: parent.width
-                    visible: CalcEngine.mode === 2
-                }
-
-                BitsetPanel {
-                    width: parent.width
-                    visible: CalcEngine.mode === 2
+                    visible: CalcEngine.mode !== 2
                 }
 
                 // Dynamic Keypad
                 Keypad {
                     width: parent.width
                     height: parent.height - y - 10
+                    visible: CalcEngine.mode !== 2
+                }
+
+                // Miscellaneous converters and color tools
+                MiscPanel {
+                    width: parent.width
+                    height: parent.height - y - 10
+                    visible: CalcEngine.mode === 2
                 }
             }
 
@@ -146,6 +144,18 @@ Window {
     Item {
         focus: true
         Keys.onPressed: (event) => {
+            if (CalcEngine.mode === 2) {
+                // In Misc mode, only allow Escape to close history or quit
+                if (event.key === Qt.Key_Escape) {
+                    if (historyDrawer.isOpen) {
+                        historyDrawer.isOpen = false
+                    } else {
+                        mainWindow.close()
+                    }
+                    event.accepted = true
+                }
+                return
+            }
             if (event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
                 CalcEngine.appendDigit(String.fromCharCode(event.key))
                 event.accepted = true
@@ -204,6 +214,16 @@ Window {
                 historyDrawer.isOpen = false
             } else {
                 mainWindow.close()
+            }
+        }
+    }
+
+    // Close history drawer when entering Misc mode
+    Connections {
+        target: CalcEngine
+        function onModeChanged() {
+            if (CalcEngine.mode === 2 && historyDrawer.isOpen) {
+                historyDrawer.isOpen = false
             }
         }
     }

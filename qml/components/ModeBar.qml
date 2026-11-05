@@ -18,7 +18,7 @@ Item {
             model: [
                 { id: 0, name: "Standard" },
                 { id: 1, name: "Scientific" },
-                { id: 2, name: "Programmer" }
+                { id: 2, name: "Misc" }
             ]
 
             Rectangle {
@@ -54,6 +54,7 @@ Item {
     Rectangle {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
+        visible: CalcEngine.mode !== 2
         width: histText.implicitWidth + 20
         height: 30
         radius: 8

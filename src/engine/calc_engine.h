@@ -3,7 +3,6 @@
 
 #include "calc_types.h"
 #include "math_parser.h"
-#include "programmer_mode.h"
 #include <QObject>
 #include <QString>
 #include <QVariantList>
@@ -27,15 +26,6 @@ class CalcEngine : public QObject {
     Q_PROPERTY(QString memoryDisplay READ memoryDisplay NOTIFY memoryChanged)
     Q_PROPERTY(QVariantList history READ history NOTIFY historyChanged)
 
-    // Programmer Mode Properties
-    Q_PROPERTY(int radix READ radix WRITE setRadix NOTIFY radixChanged)
-    Q_PROPERTY(int wordSize READ wordSize WRITE setWordSize NOTIFY wordSizeChanged)
-    Q_PROPERTY(QString hexValue READ hexValue NOTIFY programmerValuesChanged)
-    Q_PROPERTY(QString decValue READ decValue NOTIFY programmerValuesChanged)
-    Q_PROPERTY(QString octValue READ octValue NOTIFY programmerValuesChanged)
-    Q_PROPERTY(QString binValue READ binValue NOTIFY programmerValuesChanged)
-    Q_PROPERTY(QVariantList bits64 READ bits64 NOTIFY programmerValuesChanged)
-
 public:
     explicit CalcEngine(QObject *parent = nullptr);
 
@@ -50,14 +40,6 @@ public:
     bool hasMemory() const;
     QString memoryDisplay() const;
     QVariantList history() const;
-
-    int radix() const;
-    int wordSize() const;
-    QString hexValue() const;
-    QString decValue() const;
-    QString octValue() const;
-    QString binValue() const;
-    QVariantList bits64() const;
 
 public Q_SLOTS:
     void appendDigit(const QString &digit);
@@ -87,12 +69,6 @@ public Q_SLOTS:
     // Configuration
     void setMode(int mode);
     void setAngleUnit(int unit);
-    void setRadix(int r);
-    void setWordSize(int bits);
-
-    // Programmer Bit Manipulation
-    void toggleBit(int bitIndex);
-    void setBit(int bitIndex, bool val);
 
     // History
     void restoreHistory(int index, bool resultOnly = false);
@@ -108,9 +84,6 @@ Q_SIGNALS:
     void invModeChanged();
     void memoryChanged();
     void historyChanged();
-    void radixChanged();
-    void wordSizeChanged();
-    void programmerValuesChanged();
 
 private:
     QString m_expression;
@@ -123,7 +96,6 @@ private:
 
     Mode m_mode = Mode::Standard;
     MathParser m_mathParser;
-    ProgrammerMode m_programmerMode;
 
     double m_memory = 0.0;
     bool m_hasMemory = false;
@@ -131,8 +103,6 @@ private:
     std::vector<HistoryItem> m_historyItems;
 
     void updateLivePreview();
-    void syncProgrammerFromMath(double val);
-    void syncMathFromProgrammer();
 };
 
 } // namespace calc

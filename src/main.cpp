@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QIcon>
 #include "engine/calc_engine.h"
+#include "engine/misc_engine.h"
 #include "theme/theme_manager.h"
 
 int main(int argc, char *argv[]) {
@@ -34,20 +35,15 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
 
     calc::CalcEngine calcEngine;
+    calc::MiscEngine miscEngine;
     calc::ThemeManager themeManager;
 
     engine.rootContext()->setContextProperty("CalcEngine", &calcEngine);
+    engine.rootContext()->setContextProperty("MiscEngine", &miscEngine);
     engine.rootContext()->setContextProperty("Theme", &themeManager);
 
-    // Prefer local qml file for development or fallback to compiled qrc
-    QString qmlFilePath = QStringLiteral("qrc:/Hisaab/qml/Main.qml");
-    if (QFile::exists(QDir::currentPath() + "/qml/Main.qml")) {
-        qmlFilePath = QUrl::fromLocalFile(QDir::currentPath() + "/qml/Main.qml").toString();
-    } else if (QFile::exists(QCoreApplication::applicationDirPath() + "/../qml/Main.qml")) {
-        qmlFilePath = QUrl::fromLocalFile(QDir(QCoreApplication::applicationDirPath() + "/../qml/Main.qml").canonicalPath()).toString();
-    }
-
-    const QUrl url(qmlFilePath);
+    // Use compiled QML resources to ensure module resolution works
+    const QUrl url(QStringLiteral("qrc:/Hisaab/qml/Main.qml"));
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {

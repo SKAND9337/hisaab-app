@@ -34,15 +34,19 @@ A powerful, memory-safe, hardware-accelerated **Spatial Calculator** with tactil
   * **Angle Modes:** Fast toggle between **DEG** and **RAD**.
   * **Hyperbolic & Powers:** `sinh`, `cosh`, `tanh`, `xʸ`, `√x`, `x²`, `x!`, `nCr`, `nPr`.
   * **Constants:** `π`, `e`, `φ` (Golden ratio), `c` (Speed of light), `h` (Planck).
-* **Programmer Mode (Numeral Systems):**
-  * Radix: **HEX**, **DEC**, **OCT**, and **BIN** simultaneous live values.
-  * Word Sizes: **64-bit (QWORD)**, **32-bit (DWORD)**, **16-bit (WORD)**, and **8-bit (BYTE)** with automated bit-masking.
-  * Bitwise Operations: `AND`, `OR`, `XOR`, `NOT`, `<<` (LSH), `>>` (RSH), `ROL`, `ROR`.
-  * **Interactive 64-Bit Matrix:** Click any individual bit in the visual bitset matrix to immediately flip it and recompute the active value.
 * **Slide-out History Drawer & Mode Persistence:**
   * Remembers your last active mode across sessions via `QSettings`.
   * Smooth slide-in history drawer with copy and expression restore.
   * `ESC` hotkey dismisses history drawer if open, or quits the application.
+
+### 4. Miscellaneous Converters & Color Tools
+* **Currency Converter:** Live FX rates from open.er-api.com (USD base) with offline fallback and cache; 16 major currencies (USD, EUR, GBP, INR, PKR, BDT, LKR, NPR, AED, SAR, JPY, CNY, AUD, CAD, CHF, SGD) with human-readable labels.
+* **Mass Converter:** Kilogram, Gram, Milligram, Tonne, Pound, Ounce, Stone.
+* **Length Converter:** Meter, Kilometer, Centimeter, Millimeter, Mile, Yard, Foot, Inch, Nautical mile.
+* **Data Converter:** Byte, Bit, KB/MB/GB/TB (decimal) and KiB/MiB/GiB/TiB (binary).
+* **Speed Converter:** m/s, km/h, mph, knots, ft/s.
+* **Color Picker:** Live swatch, HEX input, RGB sliders (0–255), and 10 preset colors; shows RGB breakdown and HEX output.
+* **Quick Access:** Third tab in the mode bar labeled **Misc**; history drawer auto-closes and calculator keyboard shortcuts are disabled in this mode.
 
 ---
 
@@ -59,7 +63,7 @@ The application connects directly to Noctalia in two complementary ways:
 ### Requirements
 * Arch Linux / Fedora / Ubuntu
 * GCC 13+ or Clang 16+ supporting **C++20**
-* Qt 6.5+ (Qt6Core, Qt6Gui, Qt6Quick, Qt6Qml)
+* Qt 6.5+ (Qt6Core, Qt6Gui, Qt6Quick, Qt6Qml, **Qt6Network**)
 * CMake 3.20+
 * ImageMagick (optional, for icon generation)
 

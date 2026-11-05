@@ -56,21 +56,6 @@ QVariantList CalcEngine::history() const {
     return list;
 }
 
-int CalcEngine::radix() const { return static_cast<int>(m_programmerMode.radix()); }
-int CalcEngine::wordSize() const { return static_cast<int>(m_programmerMode.wordSize()); }
-QString CalcEngine::hexValue() const { return QString::fromStdString(m_programmerMode.hexString()); }
-QString CalcEngine::decValue() const { return QString::fromStdString(m_programmerMode.decString()); }
-QString CalcEngine::octValue() const { return QString::fromStdString(m_programmerMode.octString()); }
-QString CalcEngine::binValue() const { return QString::fromStdString(m_programmerMode.binString(true)); }
-
-QVariantList CalcEngine::bits64() const {
-    QVariantList bits;
-    for (int i = 0; i < 64; ++i) {
-        bits.append(m_programmerMode.isBitSet(i));
-    }
-    return bits;
-}
-
 void CalcEngine::appendDigit(const QString &digit) {
     if (m_hasError) {
         clear();
@@ -198,8 +183,6 @@ void CalcEngine::clear() {
     m_errorMessage.clear();
     m_justCalculated = false;
 
-    syncProgrammerFromMath(0.0);
-
     Q_EMIT expressionChanged();
     Q_EMIT displayChanged();
     Q_EMIT previewChanged();
@@ -236,8 +219,6 @@ void CalcEngine::calculate() {
         item.timestamp = QDateTime::currentDateTime().toString("hh:mm:ss").toStdString();
         m_historyItems.insert(m_historyItems.begin(), item);
         if (m_historyItems.size() > 50) m_historyItems.pop_back();
-
-        syncProgrammerFromMath(res.value);
 
         Q_EMIT displayChanged();
         Q_EMIT previewChanged();
@@ -281,29 +262,10 @@ void CalcEngine::updateLivePreview() {
     EvalResult res = m_mathParser.evaluate(m_expression.toStdString());
     if (res.success) {
         m_preview = QString::fromStdString(res.formatted);
-        syncProgrammerFromMath(res.value);
     } else {
         m_preview.clear();
     }
     Q_EMIT previewChanged();
-}
-
-void CalcEngine::syncProgrammerFromMath(double val) {
-    if (!std::isnan(val) && !std::isinf(val)) {
-        m_programmerMode.setValue(static_cast<uint64_t>(static_cast<int64_t>(val)));
-        Q_EMIT programmerValuesChanged();
-    }
-}
-
-void CalcEngine::syncMathFromProgrammer() {
-    uint64_t val = m_programmerMode.value();
-    m_expression = QString::number(val);
-    m_display = m_expression;
-    m_justCalculated = false;
-    Q_EMIT expressionChanged();
-    Q_EMIT displayChanged();
-    updateLivePreview();
-    Q_EMIT programmerValuesChanged();
 }
 
 void CalcEngine::memoryStore() {
@@ -389,7 +351,6 @@ void CalcEngine::quickReciprocal() {
         m_display = QString::fromStdString(res.formatted);
         m_preview.clear();
         m_justCalculated = true;
-        syncProgrammerFromMath(res.value);
 
         Q_EMIT expressionChanged();
         Q_EMIT displayChanged();
@@ -413,31 +374,6 @@ void CalcEngine::setAngleUnit(int unit) {
     }
 }
 // End of AI-generated section.
-
-void CalcEngine::setRadix(int r) {
-    if (r == 16 || r == 10 || r == 8 || r == 2) {
-        m_programmerMode.setRadix(static_cast<Radix>(r));
-        Q_EMIT radixChanged();
-    }
-}
-
-void CalcEngine::setWordSize(int bits) {
-    if (bits == 64 || bits == 32 || bits == 16 || bits == 8) {
-        m_programmerMode.setWordSize(static_cast<WordSize>(bits));
-        Q_EMIT wordSizeChanged();
-        Q_EMIT programmerValuesChanged();
-    }
-}
-
-void CalcEngine::toggleBit(int bitIndex) {
-    m_programmerMode.toggleBit(bitIndex);
-    syncMathFromProgrammer();
-}
-
-void CalcEngine::setBit(int bitIndex, bool val) {
-    m_programmerMode.setBit(bitIndex, val);
-    syncMathFromProgrammer();
-}
 
 void CalcEngine::restoreHistory(int index, bool resultOnly) {
     if (index >= 0 && index < static_cast<int>(m_historyItems.size())) {

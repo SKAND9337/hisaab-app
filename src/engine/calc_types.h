@@ -11,26 +11,12 @@ namespace calc {
 enum class Mode {
     Standard,
     Scientific,
-    Programmer
+    Misc
 };
 
 enum class AngleUnit {
     Degrees,
     Radians
-};
-
-enum class WordSize {
-    Bits64 = 64,
-    Bits32 = 32,
-    Bits16 = 16,
-    Bits8  = 8
-};
-
-enum class Radix {
-    Hex = 16,
-    Dec = 10,
-    Oct = 8,
-    Bin = 2
 };
 
 struct EvalResult {

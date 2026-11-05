@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cmath>
 #include "math_parser.h"
-#include "programmer_mode.h"
 
 void testOperatorReplacement() {
     std::cout << "[Test] Operator Replacement..." << std::endl;
@@ -126,32 +125,11 @@ void testAdvancedMath() {
     std::cout << "  ✓ Passed!" << std::endl;
 }
 
-void testProgrammerMode() {
-    std::cout << "[Test] Programmer Mode (Radix & Bitset)..." << std::endl;
-
-    calc::ProgrammerMode prog;
-    prog.setValue(0x1A2B);
-
-    assert(prog.hexString() == "1A2B");
-    assert(prog.decString() == "6699");
-
-    // Toggle bit 0 (turns 0x1A2B into 0x1A2A)
-    prog.toggleBit(0);
-    assert(prog.value() == 0x1A2A);
-
-    // Word size clamp: 8-bit mode
-    prog.setWordSize(calc::WordSize::Bits8);
-    assert(prog.value() == 0x2A);
-
-    std::cout << "  ✓ Passed!" << std::endl;
-}
-
 int main() {
     std::cout << "Running Math Engine Unit Tests..." << std::endl;
     testOperatorReplacement();
     testTrailingOperatorAndParens();
     testAdvancedMath();
-    testProgrammerMode();
     std::cout << "All engine unit tests passed successfully!" << std::endl;
     return 0;
 }
