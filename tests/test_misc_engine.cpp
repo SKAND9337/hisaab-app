@@ -49,8 +49,20 @@ void testCategoryDefaults() {
         return;
     }
 
-    // Color (5): no units
+    // Time (5): s -> h (indices 0, 2)
     engine.setCategory(5);
+    if (engine.fromIndex() != 0 || engine.toIndex() != 2) {
+        std::cerr << "  FAIL: Time defaults from=0 to=2, got from=" << engine.fromIndex() << " to=" << engine.toIndex() << std::endl;
+        return;
+    }
+    // Check time units exist
+    if (engine.unitLabels().isEmpty()) {
+        std::cerr << "  FAIL: Time should have unit labels" << std::endl;
+        return;
+    }
+
+    // Color (6): no units
+    engine.setCategory(6);
     if (!engine.unitLabels().isEmpty()) {
         std::cerr << "  FAIL: Color should have empty unit labels" << std::endl;
         return;
@@ -251,7 +263,7 @@ void testColorAndHex() {
     std::cout << "[Test] Color and HEX..." << std::endl;
 
     MiscEngine engine;
-    engine.setCategory(5); // Color
+    engine.setCategory(6); // Color
 
     // Default color
     QColor defaultColor = engine.color();
@@ -316,6 +328,113 @@ void testColorAndHex() {
     std::cout << "  Passed!" << std::endl;
 }
 
+void testTimeConversions() {
+    std::cout << "[Test] Time Conversions..." << std::endl;
+
+    MiscEngine engine;
+    engine.setCategory(5); // Time
+
+    // 1 day = 24 hours (indices: day=3, hour=2)
+    engine.setAmount(1.0);
+    engine.setFromIndex(3); // day
+    engine.setToIndex(2);   // hour
+    double result = engine.result();
+    if (std::abs(result - 24.0) > 0.001) {
+        std::cerr << "  FAIL: 1 day to hours = " << result << ", expected ~24.0" << std::endl;
+        return;
+    }
+
+    // 1 hour = 3600 seconds
+    engine.setAmount(1.0);
+    engine.setFromIndex(2); // hour
+    engine.setToIndex(0);   // second
+    result = engine.result();
+    if (std::abs(result - 3600.0) > 0.001) {
+        std::cerr << "  FAIL: 1 hour to seconds = " << result << ", expected ~3600.0" << std::endl;
+        return;
+    }
+
+    // 1 minute = 60 seconds
+    engine.setAmount(1.0);
+    engine.setFromIndex(1); // minute
+    engine.setToIndex(0);   // second
+    result = engine.result();
+    if (std::abs(result - 60.0) > 0.001) {
+        std::cerr << "  FAIL: 1 minute to seconds = " << result << ", expected ~60.0" << std::endl;
+        return;
+    }
+
+    // Same unit identity
+    engine.setAmount(5.0);
+    engine.setFromIndex(0);
+    engine.setToIndex(0);
+    result = engine.result();
+    if (std::abs(result - 5.0) > 1e-9) {
+        std::cerr << "  FAIL: Same unit identity failed: " << result << std::endl;
+        return;
+    }
+
+    std::cout << "  Passed!" << std::endl;
+}
+
+void testSmartTime() {
+    std::cout << "[Test] Smart Time Converter..." << std::endl;
+
+    MiscEngine engine;
+    engine.setCategory(5); // Time
+    engine.setToIndex(2); // Convert to hours
+
+    // Test colon format: 1 day 12 hours 15 minutes 8 seconds = 11:12:15:08
+    engine.setSmartTimeInput("11:12:15:08");
+    double result = engine.smartTimeResult();
+    double expectedSeconds = 11 * 86400 + 12 * 3600 + 15 * 60 + 8;
+    if (std::abs(result - expectedSeconds) > 1.0) {
+        std::cerr << "  FAIL: Smart time 11:12:15:08 = " << result << "s, expected " << expectedSeconds << "s" << std::endl;
+        return;
+    }
+    double resultHours = result / 3600.0;
+    if (std::abs(resultHours - (11 * 24 + 12 + 15/60.0 + 8/3600.0)) > 0.001) {
+        std::cerr << "  FAIL: Smart time to hours = " << resultHours << std::endl;
+        return;
+    }
+
+    // Test unit format: 2d 3h 30m
+    engine.setSmartTimeInput("2d 3h 30m");
+    result = engine.smartTimeResult();
+    expectedSeconds = 2 * 86400 + 3 * 3600 + 30 * 60;
+    if (std::abs(result - expectedSeconds) > 1.0) {
+        std::cerr << "  FAIL: Smart time 2d 3h 30m = " << result << "s, expected " << expectedSeconds << "s" << std::endl;
+        return;
+    }
+
+    // Test h:m:s format (no days)
+    engine.setSmartTimeInput("2:30:15");
+    result = engine.smartTimeResult();
+    expectedSeconds = 2 * 3600 + 30 * 60 + 15;
+    if (std::abs(result - expectedSeconds) > 1.0) {
+        std::cerr << "  FAIL: Smart time 2:30:15 = " << result << "s, expected " << expectedSeconds << "s" << std::endl;
+        return;
+    }
+
+    // Test m:s format
+    engine.setSmartTimeInput("45:30");
+    result = engine.smartTimeResult();
+    expectedSeconds = 45 * 60 + 30;
+    if (std::abs(result - expectedSeconds) > 1.0) {
+        std::cerr << "  FAIL: Smart time 45:30 = " << result << "s, expected " << expectedSeconds << "s" << std::endl;
+        return;
+    }
+
+    // Test empty input
+    engine.setSmartTimeInput("");
+    if (engine.smartTimeResult() != 0.0) {
+        std::cerr << "  FAIL: Empty smart time should be 0" << std::endl;
+        return;
+    }
+
+    std::cout << "  Passed!" << std::endl;
+}
+
 int main(int argc, char *argv[]) {
     // Isolate QSettings per test run
     QTemporaryDir tmpDir;
@@ -335,6 +454,8 @@ int main(int argc, char *argv[]) {
     testCurrencyIdentity();
     testCurrencyPositiveRate();
     testColorAndHex();
+    testTimeConversions();
+    testSmartTime();
 
     std::cout << "\nAll MiscEngine tests passed!" << std::endl;
     return 0;

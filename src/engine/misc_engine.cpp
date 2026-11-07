@@ -38,6 +38,7 @@ QStringList MiscEngine::categoryNames() const {
         tr("Length"),
         tr("Data"),
         tr("Speed"),
+        tr("Time"),
         tr("Color")
     };
 }
@@ -51,8 +52,14 @@ QStringList MiscEngine::unitLabels() const {
         for (const auto &currency : list) {
             labels.append(currency.code + QStringLiteral(" — ") + currency.name);
         }
-    } else if (!isColor()) {
+    } else if (!isColor() && !isTime()) {
         const auto &units = currentUnits();
+        labels.reserve(units.size());
+        for (const auto &unit : units) {
+            labels.append(unit.label + QStringLiteral(" (") + unit.symbol + QLatin1Char(')'));
+        }
+    } else if (isTime()) {
+        const auto &units = timeUnits();
         labels.reserve(units.size());
         for (const auto &unit : units) {
             labels.append(unit.label + QStringLiteral(" (") + unit.symbol + QLatin1Char(')'));
@@ -73,7 +80,7 @@ QString MiscEngine::fromLabel() const {
     if (isColor()) {
         return {};
     }
-    const auto &units = currentUnits();
+    const auto &units = isTime() ? timeUnits() : currentUnits();
     if (m_fromIndex >= 0 && m_fromIndex < units.size()) {
         return units[m_fromIndex].label;
     }
@@ -91,7 +98,7 @@ QString MiscEngine::toLabel() const {
     if (isColor()) {
         return {};
     }
-    const auto &units = currentUnits();
+    const auto &units = isTime() ? timeUnits() : currentUnits();
     if (m_toIndex >= 0 && m_toIndex < units.size()) {
         return units[m_toIndex].label;
     }
@@ -109,7 +116,7 @@ QString MiscEngine::fromSymbol() const {
     if (isColor()) {
         return {};
     }
-    const auto &units = currentUnits();
+    const auto &units = isTime() ? timeUnits() : currentUnits();
     if (m_fromIndex >= 0 && m_fromIndex < units.size()) {
         return units[m_fromIndex].symbol;
     }
@@ -127,7 +134,7 @@ QString MiscEngine::toSymbol() const {
     if (isColor()) {
         return {};
     }
-    const auto &units = currentUnits();
+    const auto &units = isTime() ? timeUnits() : currentUnits();
     if (m_toIndex >= 0 && m_toIndex < units.size()) {
         return units[m_toIndex].symbol;
     }
@@ -153,7 +160,7 @@ double MiscEngine::result() const {
         return m_amount * toRate / fromRate;
     }
 
-    const auto &units = currentUnits();
+    const auto &units = isTime() ? timeUnits() : currentUnits();
     if (m_fromIndex < 0 || m_fromIndex >= units.size() ||
         m_toIndex < 0 || m_toIndex >= units.size()) {
         return 0.0;
@@ -192,7 +199,7 @@ QString MiscEngine::conversionText() const {
             .arg(list[m_fromIndex].code, formatValue(one), list[m_toIndex].code);
     }
 
-    const auto &units = currentUnits();
+    const auto &units = isTime() ? timeUnits() : currentUnits();
     if (m_fromIndex < 0 || m_fromIndex >= units.size() ||
         m_toIndex < 0 || m_toIndex >= units.size()) {
         return {};
@@ -219,6 +226,14 @@ void MiscEngine::setCategory(int category) {
     m_fromIndex = defaults.first;
     m_toIndex = defaults.second;
 
+    // Reset smart time input when leaving Time category
+    if (category != TimeCategory && !m_smartTimeInput.isEmpty()) {
+        m_smartTimeInput.clear();
+        m_smartTimeResult = 0.0;
+        Q_EMIT smartTimeInputChanged();
+        Q_EMIT smartTimeResultChanged();
+    }
+
     Q_EMIT categoryChanged();
     Q_EMIT unitsChanged();
     Q_EMIT fromIndexChanged();
@@ -242,7 +257,7 @@ void MiscEngine::setFromIndex(int index) {
     if (isColor()) {
         return;
     }
-    const int count = isCurrency() ? currencies().size() : currentUnits().size();
+    const int count = isCurrency() ? currencies().size() : (isTime() ? timeUnits().size() : currentUnits().size());
     if (index < 0 || index >= count || index == m_fromIndex) {
         return;
     }
@@ -255,7 +270,7 @@ void MiscEngine::setToIndex(int index) {
     if (isColor()) {
         return;
     }
-    const int count = isCurrency() ? currencies().size() : currentUnits().size();
+    const int count = isCurrency() ? currencies().size() : (isTime() ? timeUnits().size() : currentUnits().size());
     if (index < 0 || index >= count || index == m_toIndex) {
         return;
     }
@@ -470,6 +485,19 @@ const QVector<MiscEngine::Unit> &MiscEngine::speedUnits() {
     return units;
 }
 
+const QVector<MiscEngine::Unit> &MiscEngine::timeUnits() {
+    static const QVector<Unit> units = {
+        {tr("Second"), QStringLiteral("s"), 1.0},
+        {tr("Minute"), QStringLiteral("min"), 60.0},
+        {tr("Hour"), QStringLiteral("h"), 3600.0},
+        {tr("Day"), QStringLiteral("d"), 86400.0},
+        {tr("Week"), QStringLiteral("wk"), 604800.0},
+        {tr("Month (30 days)"), QStringLiteral("mo"), 2592000.0},
+        {tr("Year (365 days)"), QStringLiteral("yr"), 31536000.0}
+    };
+    return units;
+}
+
 const QVector<MiscEngine::Currency> &MiscEngine::currencies() {
     static const QVector<Currency> list = {
         {QStringLiteral("USD"), tr("US Dollar")},
@@ -525,6 +553,8 @@ QPair<int, int> MiscEngine::defaultIndices(int category) {
         return {3, 4};   // MB -> GB
     case SpeedCategory:
         return {1, 2};   // km/h -> mph
+    case TimeCategory:
+        return {0, 2};   // s -> h
     case ColorCategory:
     default:
         return {0, 0};
@@ -546,6 +576,8 @@ const QVector<MiscEngine::Unit> &MiscEngine::currentUnits() const {
         return dataUnits();
     case SpeedCategory:
         return speedUnits();
+    case TimeCategory:
+        return timeUnits();
     default:
         return empty;
     }
@@ -593,6 +625,92 @@ void MiscEngine::loadCachedRates() {
 
     m_rates = fallbackRates();
     m_rateStatus = tr("Offline rates");
+}
+
+double MiscEngine::parseSmartTime(const QString &input) {
+    QString text = input.trimmed();
+    if (text.isEmpty()) {
+        return 0.0;
+    }
+
+    // Parse format: d:h:m:s or any subset like 1:30:00 or 45:30 or 1d 2h 3m 4s
+    double totalSeconds = 0.0;
+    bool hasExplicitUnits = false;
+
+    // Try to parse with explicit units first (e.g., "1d 2h 3m 4s")
+    QRegularExpression reUnit(R"((\d+(?:\.\d+)?)\s*([dhmswkyr]))", QRegularExpression::CaseInsensitiveOption);
+    QRegularExpressionMatchIterator it = reUnit.globalMatch(text);
+    while (it.hasNext()) {
+        QRegularExpressionMatch match = it.next();
+        bool ok = false;
+        double value = match.captured(1).toDouble(&ok);
+        if (!ok) continue;
+
+        QString unit = match.captured(2).toLower();
+        hasExplicitUnits = true;
+
+        if (unit == "d") totalSeconds += value * 86400.0;
+        else if (unit == "h") totalSeconds += value * 3600.0;
+        else if (unit == "m") totalSeconds += value * 60.0;
+        else if (unit == "s") totalSeconds += value;
+        else if (unit == "w") totalSeconds += value * 604800.0;
+        else if (unit == "k") totalSeconds += value * 2592000.0; // month
+        else if (unit == "y") totalSeconds += value * 31536000.0; // year
+    }
+
+    if (hasExplicitUnits) {
+        return totalSeconds;
+    }
+
+    // Parse colon-separated format: d:h:m:s or h:m:s or m:s
+    QStringList parts = text.split(':');
+    if (parts.size() >= 2 && parts.size() <= 4) {
+        bool ok = true;
+        double values[4] = {0, 0, 0, 0};
+
+        // Right-align: last part is seconds, second-to-last is minutes, etc.
+        for (int i = 0; i < parts.size(); ++i) {
+            values[3 - parts.size() + 1 + i] = parts[i].toDouble(&ok);
+            if (!ok) return 0.0;
+        }
+
+        totalSeconds = values[0] * 86400.0 + values[1] * 3600.0 + values[2] * 60.0 + values[3];
+        return totalSeconds;
+    }
+
+    return 0.0;
+}
+
+void MiscEngine::setSmartTimeInput(const QString &input) {
+    QString trimmed = input.trimmed();
+    if (m_smartTimeInput == trimmed) {
+        return;
+    }
+    m_smartTimeInput = trimmed;
+    m_smartTimeResult = parseSmartTime(trimmed);
+    Q_EMIT smartTimeInputChanged();
+    Q_EMIT smartTimeResultChanged();
+}
+
+QString MiscEngine::smartTimeConversionText() const {
+    if (m_smartTimeInput.isEmpty()) {
+        return {};
+    }
+
+    // Show the breakdown of the parsed time
+    const auto &units = timeUnits();
+    if (m_toIndex < 0 || m_toIndex >= units.size()) {
+        return {};
+    }
+
+    double targetFactor = units[m_toIndex].factor;
+    if (targetFactor <= 0.0) {
+        return {};
+    }
+
+    double resultInTarget = m_smartTimeResult / targetFactor;
+    return QStringLiteral("%1 = %2 %3")
+        .arg(m_smartTimeInput, formatValue(resultInTarget), units[m_toIndex].symbol);
 }
 
 } // namespace calc

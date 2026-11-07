@@ -39,6 +39,10 @@ class MiscEngine : public QObject {
     Q_PROPERTY(int red READ red NOTIFY colorChanged)
     Q_PROPERTY(int green READ green NOTIFY colorChanged)
     Q_PROPERTY(int blue READ blue NOTIFY colorChanged)
+    Q_PROPERTY(QString smartTimeInput READ smartTimeInput WRITE setSmartTimeInput NOTIFY smartTimeInputChanged)
+    Q_PROPERTY(double smartTimeResult READ smartTimeResult NOTIFY smartTimeResultChanged)
+    Q_PROPERTY(QString smartTimeResultText READ smartTimeResultText NOTIFY smartTimeResultChanged)
+    Q_PROPERTY(QString smartTimeConversionText READ smartTimeConversionText NOTIFY smartTimeResultChanged)
 
 public:
     static constexpr int CurrencyCategory = 0;
@@ -46,7 +50,8 @@ public:
     static constexpr int LengthCategory = 2;
     static constexpr int DataCategory = 3;
     static constexpr int SpeedCategory = 4;
-    static constexpr int ColorCategory = 5;
+    static constexpr int TimeCategory = 5;
+    static constexpr int ColorCategory = 6;
 
     explicit MiscEngine(QObject *parent = nullptr);
 
@@ -72,6 +77,10 @@ public:
     int red() const { return m_color.red(); }
     int green() const { return m_color.green(); }
     int blue() const { return m_color.blue(); }
+    QString smartTimeInput() const { return m_smartTimeInput; }
+    double smartTimeResult() const { return m_smartTimeResult; }
+    QString smartTimeResultText() const { return formatValue(m_smartTimeResult); }
+    QString smartTimeConversionText() const;
 
 public Q_SLOTS:
     void setCategory(int category);
@@ -85,6 +94,7 @@ public Q_SLOTS:
     void setRed(int red);
     void setGreen(int green);
     void setBlue(int blue);
+    void setSmartTimeInput(const QString &input);
 
 Q_SIGNALS:
     void categoryChanged();
@@ -96,6 +106,8 @@ Q_SIGNALS:
     void ratesLoadingChanged();
     void rateStatusChanged();
     void colorChanged();
+    void smartTimeInputChanged();
+    void smartTimeResultChanged();
 
 private:
     struct Unit {
@@ -120,11 +132,14 @@ private:
     QString m_lastRatesUpdated;
     QNetworkAccessManager *m_network = nullptr;
     QNetworkReply *m_reply = nullptr;
+    QString m_smartTimeInput;
+    double m_smartTimeResult = 0.0;
 
     static const QVector<Unit> &massUnits();
     static const QVector<Unit> &lengthUnits();
     static const QVector<Unit> &dataUnits();
     static const QVector<Unit> &speedUnits();
+    static const QVector<Unit> &timeUnits();
     static const QVector<Currency> &currencies();
     static QVariantMap fallbackRates();
     static QPair<int, int> defaultIndices(int category);
@@ -133,11 +148,13 @@ private:
     const QVector<Unit> &currentUnits() const;
     bool isCurrency() const { return m_category == CurrencyCategory; }
     bool isColor() const { return m_category == ColorCategory; }
+    bool isTime() const { return m_category == TimeCategory; }
     double rateFor(const QString &code) const;
     void setColor(const QColor &color);
     void setRatesLoading(bool loading);
     void setRateStatus(const QString &status);
     void loadCachedRates();
+    static double parseSmartTime(const QString &input);
 };
 
 } // namespace calc
