@@ -163,7 +163,9 @@ Item {
         width: parent.width
         height: implicitHeight
         implicitHeight: pickerSize + 12 + hueBarHeight + 6
-        property real pickerSize: Math.min(width, 320)
+        property real previewWidth: 38
+        property real previewGap: 16
+        property real pickerSize: Math.max(80, Math.min(320, width - previewWidth - previewGap))
         property int hueBarHeight: 18
         property real hue: 0.5
         property real saturation: 1.0
@@ -341,74 +343,50 @@ Item {
             }
         }
 
-        // Live preview of the selected color, shown beside the picker when space allows.
-        Rectangle {
-            id: previewCard
-            readonly property real availableWidth: hsvPicker.width - hsvPicker.pickerSize - 20
-            x: satValArea.x + satValArea.width + 20
+        // Live preview shapes, stacked in a vertical line beside the picker.
+        Column {
+            id: previewColumn
+            x: satValArea.x + satValArea.width + hsvPicker.previewGap
             y: satValArea.y + (satValArea.height - height) / 2
-            width: Math.min(240, availableWidth)
-            height: 132
-            visible: availableWidth >= 150
-            radius: 14
-            color: Qt.rgba(0, 0, 0, 0.18)
-            border.width: 1
-            border.color: Theme.cardHighlight
+            width: hsvPicker.previewWidth
+            spacing: 12
 
-            Text {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.topMargin: 14
-                anchors.leftMargin: 16
-                text: "Preview"
-                color: Theme.textSecondary
-                font.pixelSize: 11
-                font.bold: true
-                font.letterSpacing: 0.5
+            Rectangle {
+                width: 34
+                height: 34
+                radius: 4
+                color: MiscEngine.hex
+                border.width: 1
+                border.color: Theme.cardHighlight
+                anchors.horizontalCenter: parent.horizontalCenter
             }
 
-            Row {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: 8
-                spacing: 16
+            Rectangle {
+                width: 36
+                height: 36
+                radius: 18
+                color: MiscEngine.hex
+                border.width: 1
+                border.color: Theme.cardHighlight
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-                Rectangle {
-                    width: 34
-                    height: 34
-                    radius: 4
-                    color: MiscEngine.hex
-                    border.width: 1
-                    border.color: Theme.cardHighlight
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+            Canvas {
+                id: previewTriangle
+                width: 38
+                height: 34
+                anchors.horizontalCenter: parent.horizontalCenter
 
-                Rectangle {
-                    width: 36
-                    height: 36
-                    radius: 18
-                    color: MiscEngine.hex
-                    border.width: 1
-                    border.color: Theme.cardHighlight
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Canvas {
-                    id: previewTriangle
-                    width: 38
-                    height: 34
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.reset()
-                        ctx.beginPath()
-                        ctx.moveTo(width / 2, 0)
-                        ctx.lineTo(width, height)
-                        ctx.lineTo(0, height)
-                        ctx.closePath()
-                        ctx.fillStyle = MiscEngine.hex
-                        ctx.fill()
-                    }
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.reset()
+                    ctx.beginPath()
+                    ctx.moveTo(width / 2, 0)
+                    ctx.lineTo(width, height)
+                    ctx.lineTo(0, height)
+                    ctx.closePath()
+                    ctx.fillStyle = MiscEngine.hex
+                    ctx.fill()
                 }
             }
         }
