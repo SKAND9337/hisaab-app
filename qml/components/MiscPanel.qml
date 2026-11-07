@@ -194,7 +194,10 @@ Item {
     component HSVColorPicker: Item {
         id: hsvPicker
         width: parent.width
-        height: 200
+        height: implicitHeight
+        implicitHeight: pickerSize + 12 + hueBarHeight + 6
+        property real pickerSize: Math.min(width, 320)
+        property int hueBarHeight: 18
         property real hue: 0.5
         property real saturation: 1.0
         property real value: 1.0
@@ -233,142 +236,11 @@ Item {
             return { h: h, s: s, v: v }
         }
 
-        function updateFromColor(color) {
-            var rgb = rgbToHsv(color.red(), color.green(), color.blue())
+        function updateFromEngine() {
+            var rgb = rgbToHsv(MiscEngine.red, MiscEngine.green, MiscEngine.blue)
             hue = rgb.h
             saturation = rgb.s
             value = rgb.v
-        }
-
-        Rectangle {
-            id: satValArea
-            width: parent.width - 30
-            height: parent.width - 30
-            radius: 8
-            border.width: 1
-            border.color: Theme.cardHighlight
-
-            // Saturation/Value gradient
-            Rectangle {
-                anchors.fill: parent
-                radius: 7
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "white" }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-            }
-            Rectangle {
-                anchors.fill: parent
-                radius: 7
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 1.0; color: "black" }
-                }
-            }
-            Rectangle {
-                id: hueOverlay
-                anchors.fill: parent
-                radius: 7
-                color: Qt.hsla(hue, 1.0, 0.5, 1.0)
-            }
-
-            // Selector knob
-            Rectangle {
-                id: svKnob
-                width: 20
-                height: 20
-                radius: 10
-                x: saturation * (parent.width - width)
-                y: (1 - value) * (parent.height - height)
-                border.width: 2
-                border.color: "white"
-                color: "transparent"
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: 2
-                    radius: 8
-                    border.width: 1
-                    border.color: "black"
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                drag.target: svKnob
-                drag.minimumX: 0
-                drag.maximumX: parent.width - svKnob.width
-                drag.minimumY: 0
-                drag.maximumY: parent.height - svKnob.height
-                onPressed: {
-                    svKnob.x = Math.max(0, Math.min(parent.width - svKnob.width, mouse.x - svKnob.width / 2))
-                    svKnob.y = Math.max(0, Math.min(parent.height - svKnob.height, mouse.y - svKnob.height / 2))
-                    saturation = svKnob.x / (parent.width - svKnob.width)
-                    value = 1 - svKnob.y / (parent.height - svKnob.height)
-                    updateColor()
-                }
-                onPositionChanged: {
-                    svKnob.x = Math.max(0, Math.min(parent.width - svKnob.width, mouse.x - svKnob.width / 2))
-                    svKnob.y = Math.max(0, Math.min(parent.height - svKnob.height, mouse.y - svKnob.height / 2))
-                    saturation = svKnob.x / (parent.width - svKnob.width)
-                    value = 1 - svKnob.y / (parent.height - svKnob.height)
-                    updateColor()
-                }
-            }
-        }
-
-        // Hue slider
-        Rectangle {
-            id: hueSlider
-            x: parent.width - 22
-            width: 16
-            height: parent.width - 30
-            radius: 8
-            border.width: 1
-            border.color: Theme.cardHighlight
-
-            Rectangle {
-                anchors.fill: parent
-                radius: 7
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "red" }
-                    GradientStop { position: 1/6; color: "yellow" }
-                    GradientStop { position: 2/6; color: "lime" }
-                    GradientStop { position: 3/6; color: "cyan" }
-                    GradientStop { position: 4/6; color: "blue" }
-                    GradientStop { position: 5/6; color: "magenta" }
-                    GradientStop { position: 1.0; color: "red" }
-                }
-            }
-
-            Rectangle {
-                id: hueKnob
-                width: 24
-                height: 16
-                radius: 8
-                x: -4
-                y: hue * (parent.height - height)
-                color: "white"
-                border.width: 2
-                border.color: "black"
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                drag.target: hueKnob
-                drag.minimumY: 0
-                drag.maximumY: parent.height - hueKnob.height
-                onPressed: {
-                    hueKnob.y = Math.max(0, Math.min(parent.height - hueKnob.height, mouse.y - hueKnob.height / 2))
-                    hue = hueKnob.y / (parent.height - hueKnob.height)
-                    updateColor()
-                }
-                onPositionChanged: {
-                    hueKnob.y = Math.max(0, Math.min(parent.height - hueKnob.height, mouse.y - hueKnob.height / 2))
-                    hue = hueKnob.y / (parent.height - hueKnob.height)
-                    updateColor()
-                }
-            }
         }
 
         function updateColor() {
@@ -376,17 +248,138 @@ Item {
             MiscEngine.setRgb(rgb.r, rgb.g, rgb.b)
         }
 
+        // Saturation / value square: opaque hue base then two fade layers.
+        Rectangle {
+            id: satValArea
+            width: hsvPicker.pickerSize
+            height: width
+            radius: 8
+            border.width: 1
+            border.color: Theme.cardHighlight
+            color: Qt.hsla(hsvPicker.hue, 1.0, 0.5, 1.0)
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: 7
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#FFFFFFFF" }
+                    GradientStop { position: 1.0; color: "#00FFFFFF" }
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: 7
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: "#00000000" }
+                    GradientStop { position: 1.0; color: "#FF000000" }
+                }
+            }
+
+            Rectangle {
+                id: svKnob
+                width: 18
+                height: 18
+                radius: 9
+                x: hsvPicker.saturation * (satValArea.width - width)
+                y: (1 - hsvPicker.value) * (satValArea.height - height)
+                color: "transparent"
+                border.width: 2
+                border.color: "white"
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    radius: 7
+                    color: "transparent"
+                    border.width: 1
+                    border.color: "black"
+                }
+            }
+
+            MouseArea {
+                id: svMouse
+                anchors.fill: parent
+
+                function updateFromMouse(mx, my) {
+                    var s = (mx - svKnob.width / 2) / (satValArea.width - svKnob.width)
+                    var v = 1 - (my - svKnob.height / 2) / (satValArea.height - svKnob.height)
+                    hsvPicker.saturation = Math.max(0, Math.min(1, s))
+                    hsvPicker.value = Math.max(0, Math.min(1, v))
+                    hsvPicker.updateColor()
+                }
+
+                onPressed: updateFromMouse(mouse.x, mouse.y)
+                onPositionChanged: updateFromMouse(mouse.x, mouse.y)
+            }
+        }
+
+        // Horizontal hue slider below the square.
+        Rectangle {
+            id: hueSlider
+            width: hsvPicker.pickerSize
+            height: hsvPicker.hueBarHeight
+            anchors.top: satValArea.bottom
+            anchors.topMargin: 12
+            radius: height / 2
+            border.width: 1
+            border.color: Theme.cardHighlight
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: parent.radius - 1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#FF0000" }
+                    GradientStop { position: 0.1666667; color: "#FFFF00" }
+                    GradientStop { position: 0.3333333; color: "#00FF00" }
+                    GradientStop { position: 0.5; color: "#00FFFF" }
+                    GradientStop { position: 0.6666667; color: "#0000FF" }
+                    GradientStop { position: 0.8333333; color: "#FF00FF" }
+                    GradientStop { position: 1.0; color: "#FF0000" }
+                }
+            }
+
+            Rectangle {
+                id: hueKnob
+                width: 10
+                height: parent.height + 6
+                radius: width / 2
+                x: hsvPicker.hue * (hueSlider.width - width)
+                y: (hueSlider.height - height) / 2
+                color: "white"
+                border.width: 2
+                border.color: "black"
+            }
+
+            MouseArea {
+                id: hueMouse
+                anchors.fill: parent
+
+                function updateFromMouse(mx) {
+                    var h = (mx - hueKnob.width / 2) / (hueSlider.width - hueKnob.width)
+                    hsvPicker.hue = Math.max(0, Math.min(1, h))
+                    hsvPicker.updateColor()
+                }
+
+                onPressed: updateFromMouse(mouse.x)
+                onPositionChanged: updateFromMouse(mouse.x)
+            }
+        }
+
         // Initialize from current color
-        Component.onCompleted: updateFromColor(MiscEngine.color)
+        Component.onCompleted: updateFromEngine()
 
         Connections {
             target: MiscEngine
             function onColorChanged() {
-                if (!satValArea.containsMouse && !hueSlider.containsMouse) {
-                    updateFromColor(MiscEngine.color)
-                    svKnob.x = saturation * (satValArea.width - svKnob.width)
-                    svKnob.y = (1 - value) * (satValArea.height - svKnob.height)
-                    hueKnob.y = hue * (hueSlider.height - hueKnob.height)
+                if (!svMouse.pressed && !hueMouse.pressed) {
+                    updateFromEngine()
                 }
             }
         }

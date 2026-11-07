@@ -20,6 +20,7 @@ class MiscEngine : public QObject {
     Q_PROPERTY(int category READ category WRITE setCategory NOTIFY categoryChanged)
     Q_PROPERTY(QStringList categoryNames READ categoryNames CONSTANT)
     Q_PROPERTY(int currencyCategory READ currencyCategory CONSTANT)
+    Q_PROPERTY(int timeCategory READ timeCategory CONSTANT)
     Q_PROPERTY(int colorCategory READ colorCategory CONSTANT)
     Q_PROPERTY(double amount READ amount WRITE setAmount NOTIFY amountChanged)
     Q_PROPERTY(QStringList unitLabels READ unitLabels NOTIFY unitsChanged)
@@ -58,6 +59,7 @@ public:
     int category() const { return m_category; }
     QStringList categoryNames() const;
     int currencyCategory() const { return CurrencyCategory; }
+    int timeCategory() const { return TimeCategory; }
     int colorCategory() const { return ColorCategory; }
     double amount() const { return m_amount; }
     QStringList unitLabels() const;
@@ -79,7 +81,7 @@ public:
     int blue() const { return m_color.blue(); }
     QString smartTimeInput() const { return m_smartTimeInput; }
     double smartTimeResult() const { return m_smartTimeResult; }
-    QString smartTimeResultText() const { return formatValue(m_smartTimeResult); }
+    QString smartTimeResultText() const;
     QString smartTimeConversionText() const;
 
 public Q_SLOTS:

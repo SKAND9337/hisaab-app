@@ -398,6 +398,33 @@ void testSmartTime() {
         return;
     }
 
+    // Smart result text must follow the selected target unit.
+    engine.setToIndex(2); // hours
+    if (engine.smartTimeResultText() != "276.252222") {
+        std::cerr << "  FAIL: Smart time result in hours = \""
+                  << engine.smartTimeResultText().toStdString()
+                  << "\", expected \"276.252222\"" << std::endl;
+        return;
+    }
+
+    engine.setToIndex(1); // minutes
+    if (engine.smartTimeResultText() != "16575.133333") {
+        std::cerr << "  FAIL: Smart time result in minutes = \""
+                  << engine.smartTimeResultText().toStdString()
+                  << "\", expected \"16575.133333\"" << std::endl;
+        return;
+    }
+
+    engine.setToIndex(0); // seconds
+    if (engine.smartTimeResultText() != "994508") {
+        std::cerr << "  FAIL: Smart time result in seconds = \""
+                  << engine.smartTimeResultText().toStdString()
+                  << "\", expected \"994508\"" << std::endl;
+        return;
+    }
+
+    engine.setToIndex(2); // restore hours
+
     // Test unit format: 2d 3h 30m
     engine.setSmartTimeInput("2d 3h 30m");
     result = engine.smartTimeResult();

@@ -277,6 +277,9 @@ void MiscEngine::setToIndex(int index) {
     m_toIndex = index;
     Q_EMIT toIndexChanged();
     Q_EMIT resultChanged();
+    if (isTime()) {
+        Q_EMIT smartTimeResultChanged();
+    }
 }
 
 void MiscEngine::swapUnits() {
@@ -287,6 +290,9 @@ void MiscEngine::swapUnits() {
     Q_EMIT fromIndexChanged();
     Q_EMIT toIndexChanged();
     Q_EMIT resultChanged();
+    if (isTime()) {
+        Q_EMIT smartTimeResultChanged();
+    }
 }
 
 void MiscEngine::refreshRates() {
@@ -690,6 +696,24 @@ void MiscEngine::setSmartTimeInput(const QString &input) {
     m_smartTimeResult = parseSmartTime(trimmed);
     Q_EMIT smartTimeInputChanged();
     Q_EMIT smartTimeResultChanged();
+}
+
+QString MiscEngine::smartTimeResultText() const {
+    if (m_smartTimeInput.isEmpty()) {
+        return QStringLiteral("0");
+    }
+
+    const auto &units = timeUnits();
+    if (m_toIndex < 0 || m_toIndex >= units.size()) {
+        return QStringLiteral("0");
+    }
+
+    const double targetFactor = units[m_toIndex].factor;
+    if (targetFactor <= 0.0) {
+        return QStringLiteral("0");
+    }
+
+    return formatValue(m_smartTimeResult / targetFactor);
 }
 
 QString MiscEngine::smartTimeConversionText() const {
