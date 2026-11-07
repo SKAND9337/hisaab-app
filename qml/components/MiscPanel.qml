@@ -356,8 +356,8 @@ Item {
                 height: 34
                 radius: 4
                 color: MiscEngine.hex
-                border.width: 1
-                border.color: Theme.cardHighlight
+                border.width: 2
+                border.color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
@@ -366,8 +366,8 @@ Item {
                 height: 36
                 radius: 18
                 color: MiscEngine.hex
-                border.width: 1
-                border.color: Theme.cardHighlight
+                border.width: 2
+                border.color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
@@ -379,14 +379,20 @@ Item {
 
                 onPaint: {
                     var ctx = getContext("2d")
+                    var lineWidth = 2
+                    var inset = lineWidth / 2
                     ctx.reset()
                     ctx.beginPath()
-                    ctx.moveTo(width / 2, 0)
-                    ctx.lineTo(width, height)
-                    ctx.lineTo(0, height)
+                    ctx.moveTo(width / 2, inset)
+                    ctx.lineTo(width - inset, height - inset)
+                    ctx.lineTo(inset, height - inset)
                     ctx.closePath()
                     ctx.fillStyle = MiscEngine.hex
                     ctx.fill()
+                    ctx.strokeStyle = "white"
+                    ctx.lineWidth = lineWidth
+                    ctx.lineJoin = "round"
+                    ctx.stroke()
                 }
             }
         }
