@@ -45,7 +45,7 @@ A powerful, memory-safe, hardware-accelerated **Spatial Calculator** with tactil
 * **Length Converter:** Meter, Kilometer, Centimeter, Millimeter, Mile, Yard, Foot, Inch, Nautical mile.
 * **Data Converter:** Byte, Bit, KB/MB/GB/TB (decimal) and KiB/MiB/GiB/TiB (binary).
 * **Speed Converter:** m/s, km/h, mph, knots, ft/s.
-* **Color Picker:** Live swatch, HEX input, RGB sliders (0–255), and 10 preset colors; shows RGB breakdown and HEX output.
+* **Color Picker:** HSV square and hue slider, live preview shapes (square, circle, triangle), HEX input, and 10 preset colors.
 * **Quick Access:** Third tab in the mode bar labeled **Misc**; history drawer auto-closes and calculator keyboard shortcuts are disabled in this mode.
 
 ---

@@ -157,39 +157,6 @@ Item {
         }
     }
 
-    // Reusable accent slider.
-    component GlassSlider: Slider {
-        id: control
-        implicitHeight: 30
-
-        background: Rectangle {
-            x: control.leftPadding
-            y: control.topPadding + (control.availableHeight - height) / 2
-            width: control.availableWidth
-            height: 4
-            radius: 2
-            color: Qt.rgba(0, 0, 0, 0.42)
-
-            Rectangle {
-                width: control.visualPosition * parent.width
-                height: parent.height
-                radius: 2
-                color: Theme.accent
-            }
-        }
-
-        handle: Rectangle {
-            x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
-            y: control.topPadding + (control.availableHeight - height) / 2
-            width: 16
-            height: 16
-            radius: 8
-            color: control.pressed ? Theme.accent : Theme.textPrimary
-            border.width: 1
-            border.color: Qt.rgba(0, 0, 0, 0.45)
-        }
-    }
-
     // HSV Color Picker Component
     component HSVColorPicker: Item {
         id: hsvPicker
@@ -304,6 +271,7 @@ Item {
             MouseArea {
                 id: svMouse
                 anchors.fill: parent
+                preventStealing: true
 
                 function updateFromMouse(mx, my) {
                     var s = (mx - svKnob.width / 2) / (satValArea.width - svKnob.width)
@@ -360,6 +328,7 @@ Item {
             MouseArea {
                 id: hueMouse
                 anchors.fill: parent
+                preventStealing: true
 
                 function updateFromMouse(mx) {
                     var h = (mx - hueKnob.width / 2) / (hueSlider.width - hueKnob.width)
@@ -372,12 +341,85 @@ Item {
             }
         }
 
+        // Live preview of the selected color, shown beside the picker when space allows.
+        Rectangle {
+            id: previewCard
+            readonly property real availableWidth: hsvPicker.width - hsvPicker.pickerSize - 20
+            x: satValArea.x + satValArea.width + 20
+            y: satValArea.y + (satValArea.height - height) / 2
+            width: Math.min(240, availableWidth)
+            height: 132
+            visible: availableWidth >= 150
+            radius: 14
+            color: Qt.rgba(0, 0, 0, 0.18)
+            border.width: 1
+            border.color: Theme.cardHighlight
+
+            Text {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.topMargin: 14
+                anchors.leftMargin: 16
+                text: "Preview"
+                color: Theme.textSecondary
+                font.pixelSize: 11
+                font.bold: true
+                font.letterSpacing: 0.5
+            }
+
+            Row {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: 8
+                spacing: 16
+
+                Rectangle {
+                    width: 34
+                    height: 34
+                    radius: 4
+                    color: MiscEngine.hex
+                    border.width: 1
+                    border.color: Theme.cardHighlight
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Rectangle {
+                    width: 36
+                    height: 36
+                    radius: 18
+                    color: MiscEngine.hex
+                    border.width: 1
+                    border.color: Theme.cardHighlight
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Canvas {
+                    id: previewTriangle
+                    width: 38
+                    height: 34
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.reset()
+                        ctx.beginPath()
+                        ctx.moveTo(width / 2, 0)
+                        ctx.lineTo(width, height)
+                        ctx.lineTo(0, height)
+                        ctx.closePath()
+                        ctx.fillStyle = MiscEngine.hex
+                        ctx.fill()
+                    }
+                }
+            }
+        }
+
         // Initialize from current color
         Component.onCompleted: updateFromEngine()
 
         Connections {
             target: MiscEngine
             function onColorChanged() {
+                previewTriangle.requestPaint()
                 if (!svMouse.pressed && !hueMouse.pressed) {
                     updateFromEngine()
                 }
@@ -991,106 +1033,6 @@ Item {
                     }
                 }
 
-                // RGB sliders with values
-                Row {
-                    width: parent.width
-                    spacing: 8
-
-                    Text {
-                        text: "R"
-                        width: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#ff8080"
-                        font.pixelSize: 12
-                        font.bold: true
-                    }
-
-                    GlassSlider {
-                        id: redSlider
-                        width: parent.width - 84
-                        from: 0
-                        to: 255
-                        stepSize: 1
-                        value: MiscEngine.red
-                        onMoved: MiscEngine.setRed(Math.round(value))
-                    }
-
-                    Text {
-                        width: 30
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Math.round(redSlider.value)
-                        color: Theme.textPrimary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
-
-                Row {
-                    width: parent.width
-                    spacing: 8
-
-                    Text {
-                        text: "G"
-                        width: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#80ff9c"
-                        font.pixelSize: 12
-                        font.bold: true
-                    }
-
-                    GlassSlider {
-                        id: greenSlider
-                        width: parent.width - 84
-                        from: 0
-                        to: 255
-                        stepSize: 1
-                        value: MiscEngine.green
-                        onMoved: MiscEngine.setGreen(Math.round(value))
-                    }
-
-                    Text {
-                        width: 30
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Math.round(greenSlider.value)
-                        color: Theme.textPrimary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
-
-                Row {
-                    width: parent.width
-                    spacing: 8
-
-                    Text {
-                        text: "B"
-                        width: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#80a8ff"
-                        font.pixelSize: 12
-                        font.bold: true
-                    }
-
-                    GlassSlider {
-                        id: blueSlider
-                        width: parent.width - 84
-                        from: 0
-                        to: 255
-                        stepSize: 1
-                        value: MiscEngine.blue
-                        onMoved: MiscEngine.setBlue(Math.round(value))
-                    }
-
-                    Text {
-                        width: 30
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Math.round(blueSlider.value)
-                        color: Theme.textPrimary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
-
                 // Preset colors
                 Flow {
                     width: parent.width
@@ -1173,15 +1115,6 @@ Item {
         function onColorChanged() {
             if (!hexField.activeFocus) {
                 hexField.text = MiscEngine.hex
-            }
-            if (!redSlider.pressed) {
-                redSlider.value = MiscEngine.red
-            }
-            if (!greenSlider.pressed) {
-                greenSlider.value = MiscEngine.green
-            }
-            if (!blueSlider.pressed) {
-                blueSlider.value = MiscEngine.blue
             }
         }
 
